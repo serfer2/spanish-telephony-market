@@ -50,7 +50,11 @@ class PreprocessDataDownloadDbTestCase(BaseTestCase):
 
         run()
 
-        http_client.get.assert_called_with(self.bd_url)
+        http_client.get.assert_called_with(
+            self.bd_url,
+            headers={'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0'},
+            allow_redirects=True
+        )
 
     @mock.patch('backend.preprocess_data.requests')
     @mock.patch('backend.preprocess_data._db_is_outdated')
@@ -70,14 +74,8 @@ class PreprocessDataLoadTestCase(BaseTestCase):
 
             run()
 
-            open_file.assert_any_call(
-                'data/bd-num/geograficos.txt',
-                encoding='iso-8859-15'
-            )
-            open_file.assert_any_call(
-                'data/bd-num/moviles.txt',
-                encoding='iso-8859-15'
-            )
+            open_file.assert_any_call('/tmp/geograficos.txt', encoding='iso-8859-15')
+            open_file.assert_any_call('/tmp/moviles.txt', encoding='iso-8859-15')
 
     @mock.patch('backend.preprocess_data._load_file')
     def test_it_returns_error_code_when_no_data_readed(self, load_file):

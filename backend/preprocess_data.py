@@ -10,32 +10,51 @@ from typing import (
     Iterable,
     List,
 )
+from zipfile import ZipFile
 
 BD_URL = 'https://numeracionyoperadores.cnmc.es/bd-num.zip'
-LANDLINE_FILE = 'data/bd-num/geograficos.txt'
-MOBILE_FILE = 'data/bd-num/moviles.txt'
+USER_AGENT = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0'
+TMP_DIR = '/tmp'
+BD_FILE = 'bd-num.zip'
+LANDLINE_FILE = 'geograficos.txt'
+MOBILE_FILE = 'moviles.txt'
 
 
 def run():
 
-    if _db_is_outdated(filepath=LANDLINE_FILE):
+    if _db_is_outdated(filepath=f'{TMP_DIR}/{LANDLINE_FILE}'):
         _download_bd(BD_URL)
 
-    landline_registries = _load_file(LANDLINE_FILE)
-    mobile_registries = _load_file(MOBILE_FILE)
+    landline_registries = _load_file(f'{TMP_DIR}/{LANDLINE_FILE}')
+    mobile_registries = _load_file(f'{TMP_DIR}/{MOBILE_FILE}')
+    print(f'Readed {len(landline_registries)} landline registries')
+    print(f'Readed {len(mobile_registries)} mobile registries')
 
     if not landline_registries or not mobile_registries:
         return 1
-
-    print(f'Readed {landline_registries} landline registries')
-    print(f'Readed {mobile_registries} mobile registries')
 
     return 0
 
 
 def _download_bd(url: str):
     print(f'Dowloading (with {str(requests)}): {url}')
-    requests.get(url)
+    response = requests.get(
+        url,
+        headers={'User-Agent': USER_AGENT},
+        allow_redirects=True
+    )
+    try:
+        zip_tmp_path = f'{TMP_DIR}/{BD_FILE}'
+        with open(zip_tmp_path, 'wb') as f:
+            f.write(response.content)
+        with ZipFile(zip_tmp_path, 'r') as zipObj:
+            zipObj.extractall(path=TMP_DIR, members=(LANDLINE_FILE, MOBILE_FILE))
+    except Exception:
+        print('_download_bd() - Can\'t extract DB files')
+    try:
+        os.unlink(zip_tmp_path)
+    except Exception:
+        pass
 
 
 def _db_is_outdated(filepath: str) -> bool:
@@ -106,6 +125,8 @@ def _load_file(filepath: str) -> List[Dict]:
     for line in lines:
         fields = line.split('#')
         if len(fields) != 6:
+            continue
+        if fields[3].startswith('Libre'):
             continue
         index, block, sub_block, nmin, nmax = _numbers_from_line(fields)
         registries.append({
