@@ -79,16 +79,6 @@ def _db_creation_date(filepath: str) -> date:
     return None
 
 
-def _read_csv_lines(filepath: str) -> List[str]:
-    lines = []
-    try:
-        with open(filepath, encoding='iso-8859-15') as f:
-            lines = [line.strip() for line in f.readlines()]
-    except Exception:
-        pass
-    return lines
-
-
 def _numbers_from_line(fields: List) -> Iterable:
     index = fields[0]
     block = fields[1]
@@ -125,6 +115,16 @@ def _set_volumes_and_wholesaler(registries: List[Dict]):
         registry['volume'] = int(registry['volume'] / block_shares[_key])
         if registry['type'] == 'subasignado':
             registry['wholesaler'] = block_owners[_key]
+
+
+def _read_csv_lines(filepath: str) -> List[str]:
+    lines = []
+    try:
+        with open(filepath, encoding='iso-8859-15') as f:
+            lines = [line.strip() for line in f.readlines()]
+    except Exception:
+        pass
+    return lines
 
 
 def _load_file(filepath: str) -> List[Dict]:
@@ -179,8 +179,9 @@ def _get_operators(registries: List[Dict]) -> List[Dict]:
 
 
 def _export_operators(var_name: str, filepath: str, operators: Dict):
-    with open(filepath, 'w', encoding='iso-8859-15') as f:
-        f.write(f'{var_name} = ' + json.dumps(operators))
+    with open(filepath, mode='w', encoding='utf-8') as f:
+        content = f'{var_name} = ' + json.dumps(operators, )
+        f.write(content)
 
 
 if __name__ == '__main__':
