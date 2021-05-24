@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import (
     datetime,
     timedelta
@@ -21,20 +22,24 @@ from backend.preprocess_data import (
 )
 
 db_is_up_to_date = mock.MagicMock(return_value=False)
-file_reader_mock = mock.MagicMock()
 
 
 class BaseTestCase(TestCase):
 
     def tearDown(self) -> None:
-        try:
-            os.unlink('backend/data/mobile_data.json')
-        except Exception:
-            pass
-        try:
-            os.unlink('backend/data/landline_data.json')
-        except Exception:
-            pass
+        files_to_delete = (
+            '/tmp/geograficos.txt',
+            '/tmp/moviles.txt',
+            '/tmp/landline_operators.json',
+            '/tmp/mobile_operators.json',
+            '/tmp/landline_data.json',
+            '/tmp/mobile_data.json',
+        )
+        for filepath in files_to_delete:
+            try:
+                os.unlink(filepath)
+            except Exception:
+                pass
         return super().tearDown()
 
 
@@ -176,3 +181,85 @@ class PreprocessDataLoadTestCase(BaseTestCase):
             'volume': 100,
             'type': 'subasignado',
         }))
+
+
+@mock.patch('backend.preprocess_data._db_is_outdated', db_is_up_to_date)
+class PreprocessDataExportOperatorsTestCase(BaseTestCase):
+
+    @mock.patch('backend.preprocess_data.OUTPUT_DIR', '/tmp')
+    @mock.patch('backend.preprocess_data._read_csv_lines')
+    def test_it_exports_landline_operators(self, read_csv_lines):
+        file_content = (
+            '815#00#Madrid#Asignado#AVATEL MÓVIL#30/04/2021',
+            '822#01#Cuenca#Asignado#VODAFONE ONO#10/07/2003',
+            '822#02#Cuenca#Asignado#VODAFONE ONO#20/08/2003',
+            '822#01#Cuenca#Compartido#VODAFONE ESPAÑA#21/12/2016',
+            '822#24#Cuenca#Asignado#AIRE NETWORKS DEL MEDITERRÁNEO, S.L. UNIPERSONAL#09/07/2013',
+            '822#24#Cuenca#Subasignado 03#WIFI CANARIAS#15/05/2018'
+        )
+        read_csv_lines.return_value = file_content
+
+        run()
+
+        operators = u"""{
+            "1": {
+                "id": "1",
+                "name": "AVATEL MÓVIL",
+                "date_added": "2021-04-30"
+            },
+            "2": {
+                "id": "2",
+                "name": "VODAFONE ONO",
+                "date_added": "2003-07-10"
+            },
+            "3": {
+                "id": "3",
+                "name": "VODAFONE ESPAÑA",
+                "date_added": "2016-12-21"
+            },
+            "4": {
+                "id": "4",
+                "name": "AIRE NETWORKS DEL MEDITERRÁNEO, S.L. UNIPERSONAL",
+                "date_added": "2013-07-09"
+            },
+            "5": {
+                "id": "5",
+                "name": "WIFI CANARIAS",
+                "date_added": "2018-05-15"
+            }
+        }"""
+        expected_content = 'landlineOperators = ' + json.dumps(json.loads(operators))
+        with open('/tmp/landline_operators.json', 'r', encoding='iso-8859-15') as f:
+            file_content = f.read()
+
+            expect(file_content).to(equal(expected_content))
+
+    @mock.patch('backend.preprocess_data.OUTPUT_DIR', '/tmp')
+    @mock.patch('backend.preprocess_data._read_csv_lines')
+    def test_it_exports_mobile_operators(self, read_csv_lines):
+        file_content = (
+            '600###Asignado#VODAFONE ESPAÑA, S.A. UNIPERSONAL#19/11/1998',
+            '601#0##Asignado#VODAFONE ESPAÑA, S.A. UNIPERSONAL#01/11/2016',
+            '601#5# #Asignado#XFERA MÓVILES, S.A. UNIPERSONAL#02/02/2021',
+        )
+        read_csv_lines.return_value = file_content
+
+        run()
+
+        operators = u"""{
+            "1": {
+                "id": "1",
+                "name": "VODAFONE ESPAÑA, S.A. UNIPERSONAL",
+                "date_added": "1998-11-19"
+            },
+            "2": {
+                "id": "2",
+                "name": "XFERA MÓVILES, S.A. UNIPERSONAL",
+                "date_added": "2021-02-02"
+            }
+        }"""
+        expected_content = 'mobileOperators = ' + json.dumps(json.loads(operators))
+        with open('/tmp/mobile_operators.json', 'r', encoding='iso-8859-15') as f:
+            file_content = f.read()
+
+            expect(file_content).to(equal(expected_content))

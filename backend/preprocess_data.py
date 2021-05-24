@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 import sys
@@ -18,6 +19,9 @@ TMP_DIR = '/tmp'
 BD_FILE = 'bd-num.zip'
 LANDLINE_FILE = 'geograficos.txt'
 MOBILE_FILE = 'moviles.txt'
+OUTPUT_DIR = 'ui/data'
+LANDLINE_OPERATORS_FILE = 'landline_operators.json'
+MOBILE_OPERATORS_FILE = 'mobile_operators.json'
 
 
 def run():
@@ -32,6 +36,11 @@ def run():
 
     if not landline_registries or not mobile_registries:
         return 1
+
+    landline_operators = _get_operators(registries=landline_registries)
+    mobile_operators = _get_operators(registries=mobile_registries)
+    _export_operators('landlineOperators', f'{OUTPUT_DIR}/{LANDLINE_OPERATORS_FILE}', landline_operators)
+    _export_operators('mobileOperators', f'{OUTPUT_DIR}/{MOBILE_OPERATORS_FILE}', mobile_operators)
 
     return 0
 
@@ -145,6 +154,33 @@ def _load_file(filepath: str) -> List[Dict]:
     _set_volumes_and_wholesaler(registries)
 
     return registries
+
+
+def _get_operators(registries: List[Dict]) -> List[Dict]:
+    id = 0
+    operators = {}
+    operators_id = {}
+    for registry in registries:
+        if registry['operator'] not in operators:
+            id += 1
+            operators[registry['operator']] = {
+                'id': str(id),
+                'name': registry['operator'],
+                'date_added': registry['date'],
+            }
+            operators_id[str(id)] = registry['operator']
+        elif operators[registry['operator']]['date_added'] > registry['date']:
+            operators[registry['operator']]['date_added'] = registry['date']
+    operators_dict = {}
+    for i in range(1, len(operators) + 1):
+        operators_dict[str(i)] = operators[operators_id[str(i)]]
+
+    return operators_dict
+
+
+def _export_operators(var_name: str, filepath: str, operators: Dict):
+    with open(filepath, 'w', encoding='iso-8859-15') as f:
+        f.write(f'{var_name} = ' + json.dumps(operators))
 
 
 if __name__ == '__main__':
