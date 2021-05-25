@@ -8,6 +8,7 @@ from unittest import (
     TestCase
 )
 from unittest import mock
+from unittest.case import expectedFailure
 
 from expects import (
     have_keys,
@@ -17,8 +18,11 @@ from expects import (
 
 from backend.preprocess_data import (
     run,
+    _build_dataset,
     _load_file,
+    _operators_status_by_date,
     _read_csv_lines,
+    _unique_ordered_dates,
 )
 
 db_is_up_to_date = mock.MagicMock(return_value=False)
@@ -263,3 +267,176 @@ class PreprocessDataExportOperatorsTestCase(BaseTestCase):
             file_content = f.read()
 
             expect(file_content).to(equal(expected_content))
+
+
+@mock.patch('backend.preprocess_data._db_is_outdated', db_is_up_to_date)
+class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
+
+    def test_it_gets_sorted_unique_dates(self):
+        registries = [
+            {
+                'operator': 'operator 1',
+                'wholesaler': '',
+                'date': '2020-01-30',
+                'index': '815',
+                'block': '00',
+                'sub_block': '',
+                'nmin': 815000000,
+                'nmax': 815009999,
+                'volume': 10000,
+                'type': 'asignado',
+            }, {
+                'operator': 'operator 2',
+                'wholesaler': 'operator1',
+                'date': '2021-02-30',
+                'index': '815',
+                'block': '00',
+                'sub_block': '01',
+                'nmin': 815000100,
+                'nmax': 815000199,
+                'volume': 100,
+                'type': 'subasignado',
+            }, {
+                'operator': 'operator 3',
+                'wholesaler': '',
+                'date': '2021-02-30',
+                'index': '966',
+                'block': '55',
+                'sub_block': '',
+                'nmin': 966550000,
+                'nmax': 966559999,
+                'volume': 10000,
+                'type': 'asignado',
+            }
+        ]
+
+        dates = _unique_ordered_dates(registries)
+
+        expect(dates).to(equal(['2020-01-30', '2021-02-30']))
+
+    def test_it_gets_operators_status_by_date(self):
+        registries = [
+            {
+                #  Links Operator 1 with ER
+                'operator': 'operator 1',
+                'wholesaler': '',
+                'date': '1999-01-30',
+                'volume': 10000,
+                'type': 'asignado',
+            }, {
+                'operator': 'operator 1',
+                'wholesaler': '',
+                'date': '2018-12-31',
+                'volume': 10000,
+                'type': 'asignado',
+            }, {
+                #  Not to be shown, filtered by date
+                'operator': 'operator 2',
+                'wholesaler': 'operator 1',
+                'date': '2021-02-30',
+                'volume': 100,
+                'type': 'subasignado',
+            }, {
+                #  Will produce link between operator 3 and operator 1
+                'operator': 'operator 3',
+                'wholesaler': 'operator 1',
+                'date': '2010-02-30',
+                'volume': 100,
+                'type': 'subasignado',
+            }, {
+                #  Links this operator 3 with ER
+                'operator': 'operator 3',
+                'wholesaler': '',
+                'date': '2019-12-01',
+                'volume': 10000,
+                'type': 'asignado',
+            }
+        ]
+
+        operators_by_name = {'operator 1': '1', 'operator 2': '2', 'operator 3': '3'}
+        operators = _operators_status_by_date('2020-01-30', registries, operators_by_name)
+
+        expected_operators = [
+            {
+                'id': '1',
+                'volume': 20000,
+                'links': ['0', ]
+            }, {
+                'id': '3',
+                'volume': 10100,
+                'links': ['0', '1']
+            }
+        ]
+        expect(len(operators)).to(equal(2))
+        expect(operators[0]).to(equal(expected_operators[0]))
+        expect(operators[1]).to(equal(expected_operators[1]))
+
+    def test_it_builds_dataset_with_ordered_dates_and_associated_operators_status(self):
+        registries = [
+            {
+                'operator': 'operator 1',
+                'wholesaler': '',
+                'date': '1999-01-30',
+                'volume': 10000,
+                'type': 'asignado',
+            }, {
+                'operator': 'operator 1',
+                'wholesaler': '',
+                'date': '2018-12-31',
+                'volume': 10000,
+                'type': 'asignado',
+            }, {
+                'operator': 'operator 2',
+                'wholesaler': 'operator 1',
+                'date': '2018-12-31',
+                'index': '815',
+                'volume': 100,
+                'type': 'subasignado',
+            }, {
+                'operator': 'operator 3',
+                'wholesaler': 'operator 1',
+                'date': '2010-02-30',
+                'volume': 100,
+                'type': 'subasignado',
+            }, {
+                'operator': 'operator 3',
+                'wholesaler': '',
+                'date': '2019-12-01',
+                'volume': 10000,
+                'type': 'asignado',
+            }
+        ]
+        operators_by_name = {'operator 1': '1', 'operator 2': '2', 'operator 3': '3'}
+
+        dataset = _build_dataset(registries, operators_by_name)
+
+        expect(len(dataset)).to(equal(4))
+        expect(dataset['1999-01-30']).to(have_keys({
+            'date': '1999-01-30',
+            'operators': [
+                {'id': '1', 'volume': 10000, 'links': ['0', ]}
+            ]
+        }))
+        expect(dataset['2010-02-30']).to(have_keys({
+            'date': '2010-02-30',
+            'operators': [
+                {'id': '1', 'volume': 10000, 'links': ['0', ]},
+                {'id': '3', 'volume': 100, 'links': ['1', ]}
+            ]
+        }))
+        expect(dataset['2018-12-31']).to(have_keys({
+            'date': '2018-12-31',
+            'operators': [
+                {'id': '1', 'volume': 20000, 'links': ['0', ]},
+                {'id': '2', 'volume': 100, 'links': ['1', ]},
+                {'id': '3', 'volume': 100, 'links': ['1', ]}
+            ]
+        }))
+        expect(dataset['2019-12-01']).to(have_keys({
+            'date': '2019-12-01',
+            'operators': [
+                {'id': '1', 'volume': 20000, 'links': ['0', ]},
+                {'id': '2', 'volume': 100, 'links': ['1', ]},
+                {'id': '3', 'volume': 10100, 'links': ['0', '1']}
+            ]
+        }))

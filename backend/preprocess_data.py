@@ -39,8 +39,27 @@ def run():
 
     landline_operators = _get_operators(registries=landline_registries)
     mobile_operators = _get_operators(registries=mobile_registries)
-    _export_operators('landlineOperators', f'{OUTPUT_DIR}/{LANDLINE_OPERATORS_FILE}', landline_operators)
-    _export_operators('mobileOperators', f'{OUTPUT_DIR}/{MOBILE_OPERATORS_FILE}', mobile_operators)
+    _export_operators(
+        'landlineOperators',
+        f'{OUTPUT_DIR}/{LANDLINE_OPERATORS_FILE}',
+        landline_operators
+    )
+    _export_operators(
+        'mobileOperators',
+        f'{OUTPUT_DIR}/{MOBILE_OPERATORS_FILE}',
+        mobile_operators
+    )
+
+    landline_operators_by_name = {}
+    for _id, operator in landline_operators.items():
+        landline_operators_by_name[operator['name']] = _id
+
+    mobile_operators_by_name = {}
+    for _id, operator in mobile_operators.items():
+        mobile_operators_by_name[operator['name']] = _id
+
+    landline_dataset = _build_dataset(landline_registries, landline_operators_by_name)
+    mobile_dataset = _build_dataset(mobile_registries, mobile_operators_by_name)
 
     return 0
 
@@ -182,6 +201,52 @@ def _export_operators(var_name: str, filepath: str, operators: Dict):
     with open(filepath, mode='w', encoding='utf-8') as f:
         content = f'{var_name} = ' + json.dumps(operators, )
         f.write(content)
+
+
+def _unique_ordered_dates(registries: List[Dict]) -> List:
+    dates_dict = {}
+    for registy in registries:
+        if registy['date'] not in dates_dict:
+            dates_dict[registy['date']] = True
+    dates = list(dates_dict.keys())
+    dates.sort()
+
+    return dates
+
+
+def _operators_status_by_date(_date: str, registries: List[Dict], operators_by_name: Dict) -> List[Dict]:
+    operators = {}
+
+    for reg in registries:
+        if reg['date'] > _date:
+            continue
+
+        _id = operators_by_name[reg['operator']]
+        if _id not in operators:
+            operators[_id] = {'id': _id, 'volume': 0, 'links': []}
+
+        links = operators[_id]['links']
+        links.append(operators_by_name[reg['wholesaler']] if reg['wholesaler'] else '0')
+        links = list(set(links))
+        links.sort()
+
+        operators[_id]['volume'] += reg['volume']
+        operators[_id]['links'] = links
+
+    return sorted([op for _, op in operators.items()], key=lambda x: sum([int(i) for i in x['links']]))
+
+
+def _build_dataset(registries: List[Dict], operators_by_name: Dict) -> Dict:
+    dataset = {}
+    dates = _unique_ordered_dates(registries)
+
+    for _date in dates:
+        dataset[_date] = {
+            'date': _date,
+            'operators': _operators_status_by_date(_date, registries, operators_by_name)
+        }
+
+    return dataset
 
 
 if __name__ == '__main__':
