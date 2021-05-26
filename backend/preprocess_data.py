@@ -203,22 +203,22 @@ def _export_operators(var_name: str, filepath: str, operators: Dict):
         f.write(content)
 
 
-def _unique_ordered_dates(registries: List[Dict]) -> List:
-    dates_dict = {}
+def _unique_ordered_years(registries: List[Dict]) -> List:
+    years = []
     for registy in registries:
-        if registy['date'] not in dates_dict:
-            dates_dict[registy['date']] = True
-    dates = list(dates_dict.keys())
-    dates.sort()
+        year = registy['date'].split('-')[0]
+        if year not in years:
+            years.append(year)
+    years.sort()
+    return years
 
-    return dates
 
-
-def _operators_status_by_date(_date: str, registries: List[Dict], operators_by_name: Dict) -> List[Dict]:
+def _operators_status_by_year(year_filter: str, registries: List[Dict], operators_by_name: Dict) -> List[Dict]:
     operators = {}
 
     for reg in registries:
-        if reg['date'] > _date:
+        year = reg['date'].split('-')[0]
+        if year > year_filter:
             continue
 
         _id = operators_by_name[reg['operator']]
@@ -238,12 +238,12 @@ def _operators_status_by_date(_date: str, registries: List[Dict], operators_by_n
 
 def _build_dataset(registries: List[Dict], operators_by_name: Dict) -> Dict:
     dataset = {}
-    dates = _unique_ordered_dates(registries)
+    years = _unique_ordered_years(registries)
 
-    for _date in dates:
-        dataset[_date] = {
-            'date': _date,
-            'operators': _operators_status_by_date(_date, registries, operators_by_name)
+    for year in years:
+        dataset[year] = {
+            'year': year,
+            'operators': _operators_status_by_year(year, registries, operators_by_name)
         }
 
     return dataset
