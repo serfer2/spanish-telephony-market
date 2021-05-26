@@ -22,6 +22,7 @@ MOBILE_FILE = 'moviles.txt'
 OUTPUT_DIR = 'ui/data'
 LANDLINE_OPERATORS_FILE = 'landline_operators.json'
 MOBILE_OPERATORS_FILE = 'mobile_operators.json'
+DATASET_FILE = 'dataset.json'
 
 
 def run():
@@ -60,6 +61,7 @@ def run():
 
     landline_dataset = _build_dataset(landline_registries, landline_operators_by_name)
     mobile_dataset = _build_dataset(mobile_registries, mobile_operators_by_name)
+    _export(landline_dataset, mobile_dataset)
 
     return 0
 
@@ -247,6 +249,13 @@ def _build_dataset(registries: List[Dict], operators_by_name: Dict) -> Dict:
         }
 
     return dataset
+
+
+def _export(landline_dataset, mobile_dataset):
+    with open(f'{OUTPUT_DIR}/{DATASET_FILE}', 'w', encoding='utf-8') as f:
+        sep = (',', ':')
+        f.write(f'landlineOperators = {json.dumps(landline_dataset, separators=sep)}; ')
+        f.write(f'mobileOperators = {json.dumps(mobile_dataset, separators=sep)};')
 
 
 if __name__ == '__main__':
