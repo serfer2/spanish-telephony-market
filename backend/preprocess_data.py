@@ -22,6 +22,7 @@ MOBILE_FILE = 'moviles.txt'
 OUTPUT_DIR = 'ui/data'
 LANDLINE_OPERATORS_FILE = 'landline_operators.json'
 MOBILE_OPERATORS_FILE = 'mobile_operators.json'
+DATASET_FILE = 'dataset.json'
 
 
 def run():
@@ -60,6 +61,7 @@ def run():
 
     landline_dataset = _build_dataset(landline_registries, landline_operators_by_name)
     mobile_dataset = _build_dataset(mobile_registries, mobile_operators_by_name)
+    _export(landline_dataset, mobile_dataset)
 
     return 0
 
@@ -203,22 +205,22 @@ def _export_operators(var_name: str, filepath: str, operators: Dict):
         f.write(content)
 
 
-def _unique_ordered_dates(registries: List[Dict]) -> List:
-    dates_dict = {}
+def _unique_ordered_years(registries: List[Dict]) -> List:
+    years = []
     for registy in registries:
-        if registy['date'] not in dates_dict:
-            dates_dict[registy['date']] = True
-    dates = list(dates_dict.keys())
-    dates.sort()
+        year = registy['date'].split('-')[0]
+        if year not in years:
+            years.append(year)
+    years.sort()
+    return years
 
-    return dates
 
-
-def _operators_status_by_date(_date: str, registries: List[Dict], operators_by_name: Dict) -> List[Dict]:
+def _operators_status_by_year(year_filter: str, registries: List[Dict], operators_by_name: Dict) -> List[Dict]:
     operators = {}
 
     for reg in registries:
-        if reg['date'] > _date:
+        year = reg['date'].split('-')[0]
+        if year > year_filter:
             continue
 
         _id = operators_by_name[reg['operator']]
@@ -238,15 +240,22 @@ def _operators_status_by_date(_date: str, registries: List[Dict], operators_by_n
 
 def _build_dataset(registries: List[Dict], operators_by_name: Dict) -> Dict:
     dataset = {}
-    dates = _unique_ordered_dates(registries)
+    years = _unique_ordered_years(registries)
 
-    for _date in dates:
-        dataset[_date] = {
-            'date': _date,
-            'operators': _operators_status_by_date(_date, registries, operators_by_name)
+    for year in years:
+        dataset[year] = {
+            'year': year,
+            'operators': _operators_status_by_year(year, registries, operators_by_name)
         }
 
     return dataset
+
+
+def _export(landline_dataset, mobile_dataset):
+    with open(f'{OUTPUT_DIR}/{DATASET_FILE}', 'w', encoding='utf-8') as f:
+        sep = (',', ':')
+        f.write(f'landlineOperators = {json.dumps(landline_dataset, separators=sep)}; ')
+        f.write(f'mobileOperators = {json.dumps(mobile_dataset, separators=sep)};')
 
 
 if __name__ == '__main__':

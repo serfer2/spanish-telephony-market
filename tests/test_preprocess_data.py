@@ -8,7 +8,6 @@ from unittest import (
     TestCase
 )
 from unittest import mock
-from unittest.case import expectedFailure
 
 from expects import (
     have_keys,
@@ -20,9 +19,9 @@ from backend.preprocess_data import (
     run,
     _build_dataset,
     _load_file,
-    _operators_status_by_date,
+    _operators_status_by_year,
     _read_csv_lines,
-    _unique_ordered_dates,
+    _unique_ordered_years,
 )
 
 db_is_up_to_date = mock.MagicMock(return_value=False)
@@ -310,11 +309,11 @@ class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
             }
         ]
 
-        dates = _unique_ordered_dates(registries)
+        years = _unique_ordered_years(registries)
 
-        expect(dates).to(equal(['2020-01-30', '2021-02-30']))
+        expect(years).to(equal(['2020', '2021']))
 
-    def test_it_gets_operators_status_by_date(self):
+    def test_it_gets_operators_status_by_year(self):
         registries = [
             {
                 #  Links Operator 1 with ER
@@ -333,7 +332,7 @@ class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
                 #  Not to be shown, filtered by date
                 'operator': 'operator 2',
                 'wholesaler': 'operator 1',
-                'date': '2021-02-30',
+                'date': '2018-02-30',
                 'volume': 100,
                 'type': 'subasignado',
             }, {
@@ -354,22 +353,17 @@ class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
         ]
 
         operators_by_name = {'operator 1': '1', 'operator 2': '2', 'operator 3': '3'}
-        operators = _operators_status_by_date('2020-01-30', registries, operators_by_name)
+        operators = _operators_status_by_year('2018', registries, operators_by_name)
 
         expected_operators = [
-            {
-                'id': '1',
-                'volume': 20000,
-                'links': ['0', ]
-            }, {
-                'id': '3',
-                'volume': 10100,
-                'links': ['0', '1']
-            }
+            {'id': '1', 'volume': 20000, 'links': ['0', ]},
+            {'id': '2', 'volume': 100, 'links': ['1', ]},
+            {'id': '3', 'volume': 100, 'links': ['1', ]},
         ]
-        expect(len(operators)).to(equal(2))
+        expect(len(operators)).to(equal(3))
         expect(operators[0]).to(equal(expected_operators[0]))
         expect(operators[1]).to(equal(expected_operators[1]))
+        expect(operators[2]).to(equal(expected_operators[2]))
 
     def test_it_builds_dataset_with_ordered_dates_and_associated_operators_status(self):
         registries = [
@@ -411,32 +405,122 @@ class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
         dataset = _build_dataset(registries, operators_by_name)
 
         expect(len(dataset)).to(equal(4))
-        expect(dataset['1999-01-30']).to(have_keys({
-            'date': '1999-01-30',
+        expect(dataset['1999']).to(have_keys({
+            'year': '1999',
             'operators': [
                 {'id': '1', 'volume': 10000, 'links': ['0', ]}
             ]
         }))
-        expect(dataset['2010-02-30']).to(have_keys({
-            'date': '2010-02-30',
+        expect(dataset['2010']).to(have_keys({
+            'year': '2010',
             'operators': [
                 {'id': '1', 'volume': 10000, 'links': ['0', ]},
                 {'id': '3', 'volume': 100, 'links': ['1', ]}
             ]
         }))
-        expect(dataset['2018-12-31']).to(have_keys({
-            'date': '2018-12-31',
+        expect(dataset['2018']).to(have_keys({
+            'year': '2018',
             'operators': [
                 {'id': '1', 'volume': 20000, 'links': ['0', ]},
                 {'id': '2', 'volume': 100, 'links': ['1', ]},
                 {'id': '3', 'volume': 100, 'links': ['1', ]}
             ]
         }))
-        expect(dataset['2019-12-01']).to(have_keys({
-            'date': '2019-12-01',
+        expect(dataset['2019']).to(have_keys({
+            'year': '2019',
             'operators': [
                 {'id': '1', 'volume': 20000, 'links': ['0', ]},
                 {'id': '2', 'volume': 100, 'links': ['1', ]},
                 {'id': '3', 'volume': 10100, 'links': ['0', '1']}
             ]
         }))
+
+    @mock.patch('backend.preprocess_data.OUTPUT_DIR', '/tmp')
+    @mock.patch('backend.preprocess_data._read_csv_lines')
+    def test_it_generates_dataset_file(self, read_csv_lines):
+        landline_file_content = (
+            '815#00#Madrid#Asignado#AVATEL MÓVIL#30/04/2021',
+            '822#01#Cuenca#Asignado#VODAFONE ONO#10/07/2003',
+            '822#02#Cuenca#Asignado#VODAFONE ONO#20/08/2003',
+            '822#01#Cuenca#Compartido#VODAFONE ESPAÑA#21/12/2016',
+            '822#02#Cuenca#Subasignado 03#WIFI CANARIAS#15/05/2018',
+        )
+        mobile_file_content = (
+            '600###Asignado#VODAFONE ESPAÑA, S.A. UNIPERSONAL#19/11/1998',
+            '601#0##Asignado#VODAFONE ESPAÑA, S.A. UNIPERSONAL#01/11/2016',
+            '601#3##Asignado#VODAFONE ESPAÑA, S.A. UNIPERSONAL#01/11/2016',
+            '601#4##Asignado#VODAFONE ESPAÑA, S.A. UNIPERSONAL#21/09/2015',
+            '601#4# #Subasignado 0#XFERA MÓVILES, S.A. UNIPERSONAL#02/02/2021',
+            '640#4##Libre con Portados##21/12/2018',
+        )
+        read_csv_lines.side_effect = (landline_file_content, mobile_file_content)
+
+        run()
+
+        landline_data = json.dumps(json.loads(u"""{
+            "2003": {
+                "year": "2003",
+                "operators": [
+                    {"id": "2", "volume": 15000, "links": ["0"]}
+                ]
+            },
+            "2016": {
+                "year": "2016",
+                "operators": [
+                    {"id": "2", "volume": 15000, "links": ["0"]},
+                    {"id": "3", "volume": 5000, "links": ["0"]}
+                ]
+            },
+            "2018": {
+                "year": "2018",
+                "operators": [
+                    {"id": "2", "volume": 15000, "links": ["0"]},
+                    {"id": "3", "volume": 5000, "links": ["0"]},
+                    {"id": "4", "volume": 100, "links": ["2"]}
+                ]
+            },
+            "2021": {
+                "year": "2021",
+                "operators": [
+                    {"id": "1", "volume": 10000, "links": ["0"]},
+                    {"id": "2", "volume": 15000, "links": ["0"]},
+                    {"id": "3", "volume": 5000, "links": ["0"]},
+                    {"id": "4", "volume": 100, "links": ["2"]}
+                ]
+            }
+        }"""), separators=(',', ':'))
+
+        mobile_data = json.dumps(json.loads(u"""{
+            "1998": {
+                "year": "1998",
+                "operators": [
+                    {"id": "1", "volume": 1000000, "links": ["0"]}
+                ]
+            },
+            "2015": {
+                "year": "2015",
+                "operators": [
+                    {"id": "1", "volume": 1100000, "links": ["0"]}
+                ]
+            },
+            "2016": {
+                "year": "2016",
+                "operators": [
+                    {"id": "1", "volume": 1300000, "links": ["0"]}
+                ]
+            },
+            "2021": {
+                "year": "2021",
+                "operators": [
+                    {"id": "1", "volume": 1300000, "links": ["0"]},
+                    {"id": "2", "volume": 10000, "links": ["1"]}
+                ]
+            }
+        }"""), separators=(',', ':'))
+
+        expected_content = f'landlineOperators = {landline_data}; '
+        expected_content += f'mobileOperators = {mobile_data};'
+        with open('/tmp/dataset.json', 'r', encoding='iso-8859-15') as f:
+            file_content = f.read()
+
+            expect(file_content).to(equal(expected_content))
