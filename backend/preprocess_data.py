@@ -254,8 +254,8 @@ def _build_dataset(registries: List[Dict], operators_by_name: Dict) -> Dict:
 def _export(landline_dataset, mobile_dataset):
     with open(f'{OUTPUT_DIR}/{DATASET_FILE}', 'w', encoding='utf-8') as f:
         sep = (',', ':')
-        f.write(f'landlineOperators = {json.dumps(landline_dataset, separators=sep)}; ')
-        f.write(f'mobileOperators = {json.dumps(mobile_dataset, separators=sep)};')
+        f.write(f'landlineData = {json.dumps(landline_dataset, separators=sep)}; ')
+        f.write(f'mobileData = {json.dumps(mobile_dataset, separators=sep)};')
 
 
 if __name__ == '__main__':

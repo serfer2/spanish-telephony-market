@@ -518,8 +518,8 @@ class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
             }
         }"""), separators=(',', ':'))
 
-        expected_content = f'landlineOperators = {landline_data}; '
-        expected_content += f'mobileOperators = {mobile_data};'
+        expected_content = f'landlineData = {landline_data}; '
+        expected_content += f'mobileData = {mobile_data};'
         with open('/tmp/dataset.json', 'r', encoding='iso-8859-15') as f:
             file_content = f.read()
 
