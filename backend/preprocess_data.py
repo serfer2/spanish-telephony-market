@@ -240,12 +240,15 @@ def _operators_status_by_year(year_filter: str, registries: List[Dict], operator
 
 def _build_dataset(registries: List[Dict], operators_by_name: Dict) -> Dict:
     dataset = {}
-    years = _unique_ordered_years(registries)
+    years = [int(y) for y in _unique_ordered_years(registries)]
+    _from = min(years)
+    _to = max(years)
 
-    for year in years:
+    for year in range(_from, _to + 1):
+        _y = str(year)
         dataset[year] = {
-            'year': year,
-            'operators': _operators_status_by_year(year, registries, operators_by_name)
+            'year': _y,
+            'operators': _operators_status_by_year(_y, registries, operators_by_name)
         }
 
     return dataset

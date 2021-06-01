@@ -48,14 +48,27 @@
 
         <div id="graph" class="my-4 w-100"></div>
         <div class="row">
-            <div class="col-2"></div>
-            <div class="col-8">
-                <!-- <label for="dataset" class="form-label">Telephony</label>
-                <input type="range" class="form-range" min="1998" max="2021" step="1" id="year" value="2021"> -->
-                <label for="year" class="form-label">Year</label>
-                <input type="range" class="form-range" min="1998" max="2021" step="1" id="year" value="1998" tooltip="always">
+            <div class="col-3"></div>
+            <div class="col-6">
+              <div class="row g-12 align-items-center">
+                <div class="col-auto">
+                  <label for="dataset" class="col-form-label">Telephony type</label>
+                </div>
+                <div class="col-auto">
+                  <div id="dataset" class="btn-group btn-group-toggle" role="group" data-toggle="buttons">
+                    <button id="dataset_landline" type="button" class="btn btn-outline-secondary"><span class="bi-telephone"></span>&nbsp;Landline</button>
+                    <button id="dataset_mobile" type="button" class="btn btn-outline-secondary"><span class="bi-phone"></span>&nbsp;Mobile</button>
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <label for="year" class="form-label"><span class="bi-calendar3"></span> Year:&nbsp;<span id="yearValue"></span></label>
+                </div>
+                <div class="col">
+                  <input type="range" class="form-range" min="1998" max="2021" step="1" id="year" value="1998">
+                </div>
+              </div>
             </div>
-            <div class="col-2"></div>
+            <div class="col-3"></div>
         </div>
       </main>
     </div>
