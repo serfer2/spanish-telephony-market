@@ -10,6 +10,7 @@ from unittest import (
 from unittest import mock
 
 from expects import (
+    be_true,
     have_keys,
     equal,
     expect
@@ -404,7 +405,7 @@ class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
 
         dataset = _build_dataset(registries, operators_by_name)
 
-        expect(len(dataset)).to(equal(4))
+        expect(len(dataset)).to(equal(21))
         expect(dataset['1999']).to(have_keys({
             'year': '1999',
             'operators': [
@@ -457,29 +458,32 @@ class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
 
         run()
 
-        landline_data = json.dumps(json.loads(u"""{
-            "2003": {
+        minimum_expected_registries = []
+        minimum_expected_registries.append(json.dumps(json.loads(u"""{
                 "year": "2003",
                 "operators": [
                     {"id": "2", "volume": 15000, "links": ["0"]}
                 ]
-            },
-            "2016": {
+            }"""), separators=(',', ':'))
+        )
+        minimum_expected_registries.append(json.dumps(json.loads(u"""{
                 "year": "2016",
-                "operators": [
-                    {"id": "2", "volume": 15000, "links": ["0"]},
-                    {"id": "3", "volume": 5000, "links": ["0"]}
-                ]
-            },
-            "2018": {
+                  "operators": [
+                      {"id": "2", "volume": 15000, "links": ["0"]},
+                      {"id": "3", "volume": 5000, "links": ["0"]}
+                  ]
+              }"""), separators=(',', ':'))
+        )
+        minimum_expected_registries.append(json.dumps(json.loads(u"""{
                 "year": "2018",
                 "operators": [
                     {"id": "2", "volume": 15000, "links": ["0"]},
                     {"id": "3", "volume": 5000, "links": ["0"]},
                     {"id": "4", "volume": 100, "links": ["2"]}
                 ]
-            },
-            "2021": {
+            }"""), separators=(',', ':'))
+        )
+        minimum_expected_registries.append(json.dumps(json.loads(u"""{
                 "year": "2021",
                 "operators": [
                     {"id": "1", "volume": 10000, "links": ["0"]},
@@ -487,40 +491,39 @@ class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
                     {"id": "3", "volume": 5000, "links": ["0"]},
                     {"id": "4", "volume": 100, "links": ["2"]}
                 ]
-            }
-        }"""), separators=(',', ':'))
-
-        mobile_data = json.dumps(json.loads(u"""{
-            "1998": {
+            }"""), separators=(',', ':'))
+        )
+        minimum_expected_registries.append(json.dumps(json.loads(u"""{
                 "year": "1998",
                 "operators": [
                     {"id": "1", "volume": 1000000, "links": ["0"]}
                 ]
-            },
-            "2015": {
+            }"""), separators=(',', ':'))
+        )
+        minimum_expected_registries.append(json.dumps(json.loads(u"""{
                 "year": "2015",
                 "operators": [
                     {"id": "1", "volume": 1100000, "links": ["0"]}
                 ]
-            },
-            "2016": {
+            }"""), separators=(',', ':'))
+        )
+        minimum_expected_registries.append(json.dumps(json.loads(u"""{
                 "year": "2016",
                 "operators": [
                     {"id": "1", "volume": 1300000, "links": ["0"]}
                 ]
-            },
-            "2021": {
+            }"""), separators=(',', ':'))
+        )
+        minimum_expected_registries.append(json.dumps(json.loads(u"""{
                 "year": "2021",
                 "operators": [
                     {"id": "1", "volume": 1300000, "links": ["0"]},
                     {"id": "2", "volume": 10000, "links": ["1"]}
                 ]
-            }
-        }"""), separators=(',', ':'))
+            }"""), separators=(',', ':'))
+        )
 
-        expected_content = f'landlineData = {landline_data}; '
-        expected_content += f'mobileData = {mobile_data};'
         with open('/tmp/dataset.js', 'r', encoding='iso-8859-15') as f:
             file_content = f.read()
-
-            expect(file_content).to(equal(expected_content))
+            for registry in minimum_expected_registries:
+                expect(registry in file_content).to(be_true)
