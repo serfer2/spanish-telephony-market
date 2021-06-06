@@ -20,9 +20,9 @@ BD_FILE = 'bd-num.zip'
 LANDLINE_FILE = 'geograficos.txt'
 MOBILE_FILE = 'moviles.txt'
 OUTPUT_DIR = 'ui/data'
-LANDLINE_OPERATORS_FILE = 'landline_operators.json'
-MOBILE_OPERATORS_FILE = 'mobile_operators.json'
-DATASET_FILE = 'dataset.json'
+LANDLINE_OPERATORS_FILE = 'landline_operators.js'
+MOBILE_OPERATORS_FILE = 'mobile_operators.js'
+DATASET_FILE = 'dataset.js'
 
 
 def run():
