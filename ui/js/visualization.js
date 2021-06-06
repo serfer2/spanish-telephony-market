@@ -150,7 +150,7 @@ var yearInput = function(e) {
 function buildSelectorFilter() {
     var $f = $('#filter');
     $f.empty();
-    const text = 'Search Company (ordered by size)';
+    const text = 'Search (ordered by size)';
     $f.append(
         $('<option></option>').attr("data-tokens", "0").attr("disabled", true).attr("selected", true).text(text)
     );
