@@ -33,10 +33,10 @@ class BaseTestCase(TestCase):
         files_to_delete = (
             '/tmp/geograficos.txt',
             '/tmp/moviles.txt',
-            '/tmp/landline_operators.json',
-            '/tmp/mobile_operators.json',
-            '/tmp/landline_data.json',
-            '/tmp/mobile_data.json',
+            '/tmp/landline_operators.js',
+            '/tmp/mobile_operators.js',
+            '/tmp/landline_data.js',
+            '/tmp/mobile_data.js',
         )
         for filepath in files_to_delete:
             try:
@@ -232,7 +232,7 @@ class PreprocessDataExportOperatorsTestCase(BaseTestCase):
             }
         }"""
         expected_content = 'landlineOperators = ' + json.dumps(json.loads(operators))
-        with open('/tmp/landline_operators.json', 'r', encoding='iso-8859-15') as f:
+        with open('/tmp/landline_operators.js', 'r', encoding='iso-8859-15') as f:
             file_content = f.read()
 
             expect(file_content).to(equal(expected_content))
@@ -262,7 +262,7 @@ class PreprocessDataExportOperatorsTestCase(BaseTestCase):
             }
         }"""
         expected_content = 'mobileOperators = ' + json.dumps(json.loads(operators))
-        with open('/tmp/mobile_operators.json', 'r', encoding='iso-8859-15') as f:
+        with open('/tmp/mobile_operators.js', 'r', encoding='iso-8859-15') as f:
             file_content = f.read()
 
             expect(file_content).to(equal(expected_content))
@@ -520,7 +520,7 @@ class PreprocessDataBuildBaseGraphDatasetTestCase(BaseTestCase):
 
         expected_content = f'landlineData = {landline_data}; '
         expected_content += f'mobileData = {mobile_data};'
-        with open('/tmp/dataset.json', 'r', encoding='iso-8859-15') as f:
+        with open('/tmp/dataset.js', 'r', encoding='iso-8859-15') as f:
             file_content = f.read()
 
             expect(file_content).to(equal(expected_content))
