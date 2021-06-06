@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <div class="my-3 p-3 bg-white rounded box-shadow">
+    <div class="p-3 bg-white rounded box-shadow">
  
       <h6 class="border-bottom border-gray"><span class="bi-diagram-3"></span> &nbsp;Companies and relationships</h6>
 
@@ -45,10 +45,7 @@
         <div class="col-12">
           <div class="row g-12 align-items-center">
             <div class="col-auto">
-              <label for="dataset" class="col-form-label">Telephony type</label>
-            </div>
-            <div class="col-auto">
-              <div id="dataset" class="btn-group btn-group-toggle" role="group">
+                <div id="dataset" class="btn-group btn-group-toggle" role="group">
                 <button id="dataset_mobile" type="button" class="btn btn-outline-secondary"><span class="bi-phone"></span>&nbsp;Mobile</button>
                 <button id="dataset_landline" type="button" class="btn btn-outline-secondary"><span class="bi-telephone"></span>&nbsp;Landline</button>
               </div>
@@ -60,16 +57,40 @@
               <input type="range" class="form-range" min="1998" max="2021" step="1" id="year" value="1999">
             </div>
             <div class="col-auto">
-              <label for="limit" class="col-form-label"><span class="bi-filter"></span>Limit to bigger</label>
+              <label for="limit" class="col-form-label">Limit to bigger companies</label>
             </div>
             <div class="col-auto">
               <input type="number" class="form-control" min="3" id="limit" value="25" style="max-width: 100px;">
             </div>
+            <div class="col-auto">
+                <button id="apply_limit" type="button" class="btn btn-outline-secondary"><span class="bi-funnel"></span>&nbsp;Apply</button>
+              </div>
           </div>
         </div>
       </div>
     </div>
+
   </main>
+
+  <div class="container text-center p-3 text-white-50 footer"> 
+    <div class="row text-center p-3 box-shadow rounded">
+        <div class="col">
+            <a href="https://github.com/serfer2/spanish-telephony-market"><span class="bi-github"></span> Source code</a>
+        </div>
+        <div class="col">
+            <a href="https://numeracionyoperadores.cnmc.es/bd-num.zip"><span class="bi-clipboard-data"></span> Data source: CNMC</a>
+        </div>
+        <div class="col">
+            <a href="https://visjs.org/"><span class="bi-tools"></span> Vis.js</a>
+        </div>
+        <div class="col">
+            <span class="bi-book"></span> Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPLv3</a>
+        </div>
+        <div class="col">
+            <a href="mailto:serfer2@protonmail.com?subject=Spanish%20telephony%20market%20visualization"><span class="bi-envelope"></span> Contact</a>
+        </div>
+    </div>
+  </div>
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.bundle.min.js"></script>
