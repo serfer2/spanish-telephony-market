@@ -246,7 +246,7 @@ def _build_dataset(registries: List[Dict], operators_by_name: Dict) -> Dict:
 
     for year in range(_from, _to + 1):
         _y = str(year)
-        dataset[year] = {
+        dataset[_y] = {
             'year': _y,
             'operators': _operators_status_by_year(_y, registries, operators_by_name)
         }
